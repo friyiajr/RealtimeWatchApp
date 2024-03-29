@@ -128,4 +128,219 @@ At this point you'll want to run the watch app and make sure it compiles. Try it
 
 ## Phase 4: Connect to the iPhone
 
+In order to recieve data from the apple watch we need to use native swift code. For this we create a local native code module using:
+
+```bash
+$ npx create-expo-module watch-module --local
+```
+
+At this point you should have a `modules` directory at the root of your project containing a folder called `watch-module`
+
+<p align="center">
+<img src="./img/step3/new_module.png" height="300" >
+</p>
+
+Its tempting to try and edit this in VSCode, but alas, it doesn't do the greatest job of intellisesnse. Our best bet is go to into expo and open the development pods. We can do our editing from there.
+
+<p align="center">
+<img src="./img/step3/dev_pods1.png" height="200" >
+</p>
+
+<p align="center">
+<img src="./img/step3/dev_pods2.png" height="300" >
+</p>
+
+For our purposes you can completely ignore the `WatchModuleView` we are going to be creating all our UI on the React Native side. We do, however, need to edit the `WatchModule.swift` file.
+
+Under the `WatchModule` directory create a new swift file called `Receiver`. We are going to be using this file to "Recieve" data from the watch.
+
+You can paste this code into the Receiver:
+
+```swift
+import Foundation
+import WatchConnectivity
+
+typealias SendEventType = (_ eventName: String, _ body: [String: Any?]) -> Void
+
+class Receiver: NSObject, WCSessionDelegate {
+
+  var sendEventCallback: SendEventType? = nil
+  var isListening = true;
+
+  override init() {
+    super.init()
+    // Set this class as the watch delegate
+    WCSession.default.delegate = self
+    // Start the session with the Watch
+    WCSession.default.activate()
+  }
+
+  /// Register a callback to send data to RN
+  func registerSendEventCallback(sendEventCallback: @escaping SendEventType) {
+    isListening = true
+    self.sendEventCallback = sendEventCallback
+  }
+
+  func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+    print(message)
+  }
+
+  /// Send an event to RN when new data comes in
+  func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+    if(isListening) {
+      self.sendEventCallback?("onChange", message)
+    }
+  }
+
+  // Disable listening for accelerometer data
+  func disableListening() {
+    isListening = false;
+  }
+
+  // Junk drawer of methods required for the app to compile
+  func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
+  func sessionDidBecomeInactive(_ session: WCSession) {}
+  func sessionDidDeactivate(_ session: WCSession) {}
+}
+
+```
+
+Now back in the `WatchModule.swift` edit the file to consume that data
+
+```swift
+import ExpoModulesCore
+
+public class WatchModule: Module {
+  let receiver = Receiver()
+  public func definition() -> ModuleDefinition {
+    Name("WatchModule")
+
+    Events("onChange")
+
+    Function("startListening") {
+      receiver.registerSendEventCallback(sendEventCallback: self.sendEvent)
+    }
+
+    Function("disableListening") {
+      receiver.disableListening()
+    }
+  }
+}
+```
+
+Finally change the `index.ts` in the `watch-module` to contain the following code which exposes the Swift to React Native.
+
+```ts
+import {
+  NativeModulesProxy,
+  EventEmitter,
+  Subscription,
+} from "expo-modules-core";
+
+import WatchModule from "./src/WatchModule";
+
+import {
+  ChangeEventPayload,
+  WatchModuleViewProps,
+} from "./src/WatchModule.types";
+
+export function startListening() {
+  WatchModule.startListening();
+}
+
+export function disableListening() {
+  WatchModule.disableListening();
+}
+
+const emitter = new EventEmitter(WatchModule ?? NativeModulesProxy.WatchModule);
+
+export function addChangeListener(
+  listener: (event: ChangeEventPayload) => void
+): Subscription {
+  return emitter.addListener<ChangeEventPayload>("onChange", listener);
+}
+
+export function removeListener() {
+  emitter.removeAllListeners("onChange");
+}
+
+export { WatchModuleViewProps, ChangeEventPayload };
+```
+
+Also update the types file with this:
+
+```ts
+export type ChangeEventPayload = {
+  x: number;
+  y: number;
+};
+```
+
+At this point you'll want to import the dependancies into `App.tsx`
+
+```ts
+import {
+  addChangeListener,
+  startListening,
+  removeListener,
+  disableListening,
+} from "./modules/watch-module";
+```
+
+Then add this code to listen for events
+
+```ts
+const appState = useRef(AppState.currentState);
+useEffect(() => {
+  startListening();
+
+  addChangeListener((val) => {
+    xPosition.value = val.x;
+    yPosition.value = val.y;
+    zPosition.value = val.z;
+  });
+
+  return () => {
+    removeListener();
+  };
+}, []);
+```
+
+Also add this code to check for changes in background and foreground state
+
+```ts
+useEffect(() => {
+  const subscription = AppState.addEventListener("change", (nextAppState) => {
+    if (nextAppState === "inactive") {
+      disableListening();
+      removeListener();
+    }
+
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      startListening();
+
+      addChangeListener((val) => {
+        xPosition.value = val.x;
+        yPosition.value = val.y;
+        zPosition.value = val.z;
+      });
+    }
+
+    appState.current = nextAppState;
+  });
+
+  return () => {
+    subscription.remove();
+  };
+}, []);
+```
+
+> [!WARNING]
+> DO NOT SKIP PHASE 6!!! The code will run at this point but if you run prebuild the watchOS project will be destroyed!
+
+At this point if you run the app everything should work.
+
 ## Phase 5: Re-Create the Expo Project using a Config Plugin

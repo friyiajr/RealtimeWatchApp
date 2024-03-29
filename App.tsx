@@ -1,15 +1,63 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { AppState, StyleSheet, Text, View } from "react-native";
+import {
+  addChangeListener,
+  startListening,
+  removeListener,
+  disableListening,
+} from "./modules/watch-module";
 
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
+import { useEffect, useRef } from "react";
 
 function Home() {
   const xPosition = useSharedValue(0);
   const yPosition = useSharedValue(0);
   const zPosition = useSharedValue(0);
+
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    startListening();
+
+    addChangeListener((val) => {
+      xPosition.value = val.x;
+      yPosition.value = val.y;
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "inactive") {
+        disableListening();
+        removeListener();
+      }
+
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        startListening();
+
+        addChangeListener((val) => {
+          xPosition.value = val.x;
+          yPosition.value = val.y;
+        });
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const style = useAnimatedStyle(() => {
     const xRotationVal = xPosition.value * 90;
