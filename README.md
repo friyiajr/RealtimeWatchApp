@@ -344,3 +344,17 @@ useEffect(() => {
 At this point if you run the app everything should work.
 
 ## Phase 5: Re-Create the Expo Project using a Config Plugin
+
+At this point we'll need to move the Apple Watch code into the root folder. We do this so that it doesn't get deleted when we do a clean prebuild.
+
+You can now delete the `ios` and `android` folders.
+
+Run `yarn add expo-module-scripts`
+
+Go into the plugin directory and run `npx tsc` to compile the plugin. Then `npx expo prebuild` to run it
+
+Add this line to the `app.json`
+
+```json
+"plugins": ["./plugin/build/index.js"]
+```
