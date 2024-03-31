@@ -349,15 +349,12 @@ At this point we'll need to move the Apple Watch code into the root folder. We d
 
 Make sure Preview Assets and Preview Content both get added.
 
-Run `yarn add expo-module-scripts`
-
-change the `PRODUCT_BUNDLE_IDENTIFIER: "com.wa2goose.RealtimeWatchApp.watchkitapp",`
-
-You can now delete the `ios` and `android` folders.
-
-Go into the plugin directory and run `npx tsc` to compile the plugin. Then `npx expo prebuild` to run it
-
-Add this line to the `app.json`
+- Run `yarn add expo-module-scripts`
+- change the `"Preview Assets.xcassets"` to `"Preview Content"`
+- change the `PRODUCT_BUNDLE_IDENTIFIER: "com.wa2goose.RealtimeWatchApp.watchkitapp",`
+- You can now delete the `ios` and `android` folders.
+- Go into the plugin directory and run `npx tsc` to compile the plugin. Then `npx expo prebuild` to run it
+- Add this line to the `app.json`
 
 ```json
 "plugins": ["./plugin/build/index.js"]
