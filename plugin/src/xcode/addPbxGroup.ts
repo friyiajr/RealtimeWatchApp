@@ -4,7 +4,6 @@ export function addPbxGroup(
   xcodeProject: XcodeProject,
   { targetName }: { targetName: string }
 ) {
-  // Add PBX group
   const { uuid: pbxGroupUuid } = xcodeProject.addPbxGroup(
     [
       "ContentView.swift",
@@ -17,7 +16,6 @@ export function addPbxGroup(
     `"../${targetName}"`
   );
 
-  // Add PBXGroup to top level group
   const groups = xcodeProject.hash.project.objects["PBXGroup"];
   if (pbxGroupUuid) {
     Object.keys(groups).forEach(function (key) {

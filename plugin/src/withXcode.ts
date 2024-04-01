@@ -21,7 +21,6 @@ export const withXcode: ConfigPlugin<{
     const targetUuid = xcodeProject.generateUuid();
     const groupName = "Embed Watch Content";
 
-    // Seems to be solved
     const xCConfigurationList = addXCConfigurationList(xcodeProject, {
       name,
       targetName,
@@ -30,7 +29,6 @@ export const withXcode: ConfigPlugin<{
       deploymentTarget,
     });
 
-    // How do I do this?
     const productFile = addProductFile(xcodeProject, {
       targetName,
       groupName,

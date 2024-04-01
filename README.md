@@ -1,10 +1,14 @@
 # How to make a Realtime Accelerometer app using Expo and Apple Watch
 
 > [!NOTE]
-> All the steps to set up the project are here. If you want to go through the steps check out the `starter` branch and follow the README.md here.
+> If you don't care about the steps and just want to try this out then do the following
+>
+> 1. Clone the project
+> 2. `cd` into the project and run `yarn`
+> 3. Run `npx expo prebuild --clean`
+> 4. Run `npx expo run:ios`
 
-> [!WARNING]
-> If you don't care about the steps and just want to try this out make sure to run `npx expo prebuild` it should setup everything for you.
+## Video Notes
 
 ## Phase 1: Run Expo Prebuild
 

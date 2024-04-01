@@ -24,7 +24,7 @@ export function addToPbxNativeTargetSection(
       dependencies: [],
       name: `"${targetName}"`,
       productName: `"${targetName}"`,
-      productReference: productFile.fileRef, // TODO: FIND THIS THIS VALUE IS WRONG
+      productReference: productFile.fileRef,
       productType: `"com.apple.product-type.application"`,
     },
   };
